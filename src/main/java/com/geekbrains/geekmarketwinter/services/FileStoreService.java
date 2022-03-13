@@ -25,21 +25,20 @@ public class FileStoreService implements IFileStoreService {
     @Override
     public String storeFile(byte[] content, String fileName, int subFileType) throws IOException, NoSuchAlgorithmException {
         final UUID md5 = HashHelper.getMd5Hash(content);
-
-        String filename = fileMetaProvider.checkFileExists(md5);
-        if (filename == null) {
-            fileMetaProvider.saveFileMeta(md5, fileName, subFileType);
-            filename = systemProvider.storeFile(content, md5, fileName);
+        String hashMD5 = md5.toString();
+        hashMD5.replaceAll("-", "");
+        fileMetaProvider.saveFileMeta(hashMD5, fileName, subFileType);
+        if (!systemProvider.isFileExist(md5, fileName)) {
+            systemProvider.storeFile(content, md5, fileName);
         }
-
-        return filename;
+        return systemProvider.getFullFileName(md5, fileName);
     }
 
     @Override
-    public byte[] getFile(UUID md5) throws IOException {
+    public byte[] getFile(String md5) throws IOException {
         String filename = fileMetaProvider.checkFileExists(md5);
         String ext = FilenameUtils.getExtension(filename);
-        String fullFileName = md5.toString() + "." + ext;
+        String fullFileName = md5 + "." + ext;
         return  systemProvider.getFile(fullFileName);
     }
 
@@ -48,6 +47,14 @@ public class FileStoreService implements IFileStoreService {
         return fileMetaProvider.getMetaFiles(subtype);
     }
 
-
+    @Override
+    public void deleteFile(String filename) throws IOException {
+        String hash = fileMetaProvider.getHash(filename);
+        fileMetaProvider.deleteFile(filename);
+        String s = fileMetaProvider.checkFileExists(hash);
+        System.out.println(s);
+        if (s == null)
+            systemProvider.deleteFile(hash, filename);
+    }
 
 }

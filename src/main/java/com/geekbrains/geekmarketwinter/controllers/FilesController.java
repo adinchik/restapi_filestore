@@ -5,6 +5,7 @@ import com.geekbrains.geekmarketwinter.services.interfaces.IFileStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,13 +31,13 @@ public class FilesController {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
         }
-        String fileHash = fileStoreService.storeFile(file.getBytes(), file.getOriginalFilename(), subType);
-        return ResponseEntity.ok(fileHash);
+        String fullFileName = fileStoreService.storeFile(file.getBytes(), file.getOriginalFilename(), subType);
+        return ResponseEntity.ok(fullFileName);
     }
 
     @GetMapping("/getfile")
-    public ResponseEntity<Resource> downloadFile(@RequestParam("hash") UUID hash) throws IOException {
-        byte[] array = fileStoreService.getFile(hash);
+    public ResponseEntity<Resource> downloadFile(@RequestParam("hash") String hashString) throws IOException {
+        byte[] array = fileStoreService.getFile(hashString);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(new ByteArrayResource(array));
@@ -47,4 +48,9 @@ public class FilesController {
         return ResponseEntity.ok(fileStoreService.getMetaFiles(subtype));
     }
 
+    @DeleteMapping("/delete")
+    public int deleteProduct(@RequestParam("filename") String filename) throws IOException {
+        fileStoreService.deleteFile(filename);
+        return HttpStatus.OK.value();
+    }
 }

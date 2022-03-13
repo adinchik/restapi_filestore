@@ -15,12 +15,16 @@ import java.util.UUID;
 public class FileMetaProvider implements IFileMetaProvider {
 
 
-    private static final String GET_FILES_META = "select hash, filename from vma.file_info_metadata where sub_type = :subtype";
+    private static final String GET_FILES_META = "select hash, filename from file_info_metadata where sub_type = :subtype";
 
-    private static final String GET_FILE_PATH_BY_HASH = "select filename from vma.file_info_metadata where hash = :hash";
+    private static final String GET_FILE_PATH_BY_HASH = "select filename from file_info_metadata where hash = :hash";
 
-    private static final String SAVE_FILE_META_DATA = "insert into vma.file_info_metadata (hash, filename, sub_type)\n" +
-            "values (:hash, :finame, :subtype)";
+    private static final String SAVE_FILE_META_DATA = "insert into file_info_metadata (hash, filename, sub_type)\n" +
+            "values (:hash, :filename, :subtype)";
+
+    private static final String DELETE_FILE_META = "delete from file_info_metadata where filename=:filename";
+
+    private static final String GET_HASH_BY_FILENAME = "select hash from file_info_metadata where filename=:filename";
 
     private final Sql2o sql2o;
 
@@ -30,7 +34,7 @@ public class FileMetaProvider implements IFileMetaProvider {
 
 
     @Override
-    public String checkFileExists(UUID fileHash) {
+    public String checkFileExists(String fileHash) {
         try (Connection connection = sql2o.open()) {
             return connection.createQuery(GET_FILE_PATH_BY_HASH, false)
                     .addParameter("hash", fileHash)
@@ -39,11 +43,11 @@ public class FileMetaProvider implements IFileMetaProvider {
     }
 
     @Override
-    public void saveFileMeta(UUID fileHash, String fileName, int sybType) {
+    public void saveFileMeta(String fileHash, String fileName, int sybType) {
         try (Connection connection = sql2o.open()) {
             connection.createQuery(SAVE_FILE_META_DATA)
                     .addParameter("hash", fileHash)
-                    .addParameter("finame", fileName)
+                    .addParameter("filename", fileName)
                     .addParameter("subtype", sybType)
                     .executeUpdate();
         }
@@ -55,6 +59,24 @@ public class FileMetaProvider implements IFileMetaProvider {
             return connection.createQuery(GET_FILES_META, false)
                     .addParameter("subtype", subtype)
                     .executeAndFetch(FileMetaDTO.class);
+        }
+    }
+
+    @Override
+    public void deleteFile(String filename) {
+        try(Connection connection = sql2o.open()) {
+            connection.createQuery(DELETE_FILE_META)
+                    .addParameter("filename", filename)
+                    .executeUpdate();
+        }
+    }
+
+    @Override
+    public String getHash(String filename) {
+        try (Connection connection = sql2o.open()) {
+            return connection.createQuery(GET_HASH_BY_FILENAME, false)
+                    .addParameter("filename", filename)
+                    .executeScalar(String.class);
         }
     }
 
